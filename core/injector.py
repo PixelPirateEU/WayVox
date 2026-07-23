@@ -24,14 +24,40 @@ class TextInjector:
         logger.info(f"Füge Text ein ({len(text)} Zeichen)...")
         time.sleep(self.paste_delay_ms / 1000.0)
 
-        # Versuche zuerst Wtype, falls konfiguriert und vom Compositor unterstützt
-        if self.method == "wtype" and self._wtype_supported:
+        # 1. Falls ydotool explizit als Methode gewählt ist
+        if self.method == "ydotool":
+            if self._inject_ydotool(text):
+                return True
+            elif self.fallback_to_clipboard:
+                logger.info("ydotool fehlgeschlagen. Versuche Zwischenablage-Fallback...")
+
+        # 2. Falls wtype gewählt ist und unterstützt wird
+        elif self.method == "wtype" and self._wtype_supported:
             if self._inject_wtype(text):
                 return True
 
-        # Für perfekte Layout-Treue (z. B. deutsches QWERTZ, Umlöute Ä/Ö/Ü, Z/Y),
-        # nutzen wir primär den Zwischenablage-Injektor mit automatischer Strg+V Simulation.
+        # 3. Standard- / Fallback-Methode: Zwischenablage + Strg+V
         return self._inject_clipboard(text)
+
+    def _inject_ydotool(self, text: str) -> bool:
+        """Nutzt uinput Kernel Daemon via 'ydotool type'."""
+        if not shutil.which("ydotool"):
+            logger.info("ydotool ist nicht im PATH installiert.")
+            return False
+
+        try:
+            logger.info("Tippe Text direkt via ydotool in das aktive Fenster...")
+            result = subprocess.run(["ydotool", "type", text], capture_output=True, text=True, timeout=5.0)
+            if result.returncode == 0:
+                logger.info("Text erfolgreich via ydotool getippt!")
+                return True
+            else:
+                err = result.stderr.strip() or result.stdout.strip()
+                logger.info(f"ydotool Rückmeldung: {err}")
+                return False
+        except Exception as e:
+            logger.info(f"ydotool Ausführung fehlgeschlagen ({e}).")
+            return False
 
     def _inject_wtype(self, text: str) -> bool:
         """Nutzt native Wayland Virtual Keyboard Protokoll via 'wtype'."""
