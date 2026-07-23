@@ -10,13 +10,37 @@ class GlobalHotkeyListener(QThread):
 
     hotkey_pressed = Signal()
 
-    def __init__(self, combo_str: str = "KEY_LEFTALT+KEY_SPACE", device_path: str = None):
+    def __init__(self, combo_str: str = "KEY_LEFTMETA+KEY_X", device_path: str = None):
         super().__init__()
         self.combo_str = combo_str.upper()
         self.device_path = device_path
         self._running = False
         self._keys_pressed = set()
-        self._target_keys = set(self.combo_str.split("+"))
+        self._target_keys = {self._normalize_key(k) for k in self.combo_str.split("+")}
+
+    def _normalize_key(self, key_str: str) -> str:
+        """Normalisiert Tastenbezeichnungen für flexible Eingabe (Meta, Alt, Ctrl, Buchstabentasten)."""
+        k = key_str.upper().strip()
+        if not k.startswith("KEY_"):
+            k = f"KEY_{k}"
+
+        # Meta / Windows / Super Tasten
+        if k in ("KEY_LEFTMETA", "KEY_RIGHTMETA", "KEY_META", "KEY_SUPER", "KEY_WIN", "KEY_CMD", "KEY_CMD_L", "KEY_CMD_R"):
+            return "KEY_META"
+        # Alt Tasten
+        elif k in ("KEY_LEFTALT", "KEY_RIGHTALT", "KEY_ALT", "KEY_ALT_L", "KEY_ALT_R"):
+            return "KEY_ALT"
+        # Ctrl Tasten
+        elif k in ("KEY_LEFTCTRL", "KEY_RIGHTCTRL", "KEY_CTRL", "KEY_CTRL_L", "KEY_CTRL_R"):
+            return "KEY_CTRL"
+        # Shift Tasten
+        elif k in ("KEY_LEFTSHIFT", "KEY_RIGHTSHIFT", "KEY_SHIFT", "KEY_SHIFT_L", "KEY_SHIFT_R"):
+            return "KEY_SHIFT"
+        # Einzelne Anführungszeichen/Buchstaben wie KEY_'X' -> KEY_X
+        elif len(k) > 4 and k.startswith("KEY_'") and k.endswith("'"):
+            char = k[5:-1].upper()
+            return f"KEY_{char}"
+        return k
 
     def run(self):
         """Thread-Hauptschleife für die Hotkey-Überwachung."""
@@ -50,15 +74,13 @@ class GlobalHotkeyListener(QThread):
                 logger.warning(f"Konnte Gerät {self.device_path} nicht öffnen: {e}")
 
         if not devices:
-            # Tastaturgeräte in /dev/input/event* suchen
             for path in glob.glob("/dev/input/event*"):
                 try:
                     dev = evdev.InputDevice(path)
                     capabilities = dev.capabilities()
                     if ecodes.EV_KEY in capabilities:
-                        # Prpfen ob Tastaturschlüssel vorhanden sind
                         keys = capabilities[ecodes.EV_KEY]
-                        if ecodes.KEY_A in keys or ecodes.KEY_SPACE in keys:
+                        if ecodes.KEY_A in keys or ecodes.KEY_SPACE in keys or ecodes.KEY_X in keys:
                             devices.append(dev)
                 except (PermissionError, OSError):
                     continue
@@ -80,17 +102,18 @@ class GlobalHotkeyListener(QThread):
                     for event in dev.read():
                         if event.type == ecodes.EV_KEY:
                             key_code = evdev.categorize(event).keycode
-                            # key_code kann ein String oder Liste von Strings sein
                             keys = [key_code] if isinstance(key_code, str) else key_code
                             
                             if event.value == 1:  # Key Down
                                 for k in keys:
-                                    self._keys_pressed.add(k.upper())
+                                    norm_key = self._normalize_key(k)
+                                    self._keys_pressed.add(norm_key)
                                 self._check_combination()
 
                             elif event.value == 0:  # Key Up
                                 for k in keys:
-                                    self._keys_pressed.discard(k.upper())
+                                    norm_key = self._normalize_key(k)
+                                    self._keys_pressed.discard(norm_key)
             except Exception as e:
                 if self._running:
                     logger.debug(f"evdev Lesefehler: {e}")
@@ -111,7 +134,8 @@ class GlobalHotkeyListener(QThread):
                 try:
                     key_name = key.name.upper() if hasattr(key, 'name') else str(key).upper()
                     key_str = f"KEY_{key_name}" if not key_name.startswith("KEY_") else key_name
-                    self._keys_pressed.add(key_str)
+                    norm_key = self._normalize_key(key_str)
+                    self._keys_pressed.add(norm_key)
                     self._check_combination()
                 except Exception:
                     pass
@@ -120,7 +144,8 @@ class GlobalHotkeyListener(QThread):
                 try:
                     key_name = key.name.upper() if hasattr(key, 'name') else str(key).upper()
                     key_str = f"KEY_{key_name}" if not key_name.startswith("KEY_") else key_name
-                    self._keys_pressed.discard(key_str)
+                    norm_key = self._normalize_key(key_str)
+                    self._keys_pressed.discard(norm_key)
                 except Exception:
                     pass
 
@@ -137,5 +162,4 @@ class GlobalHotkeyListener(QThread):
         if self._target_keys.issubset(self._keys_pressed):
             logger.info(f"Hotkey getriggert: {self.combo_str}")
             self.hotkey_pressed.emit()
-            # Zurücksetzen um Mehrfach-Auslösungen bei gedrückter Taste zu vermeiden
             self._keys_pressed.clear()
