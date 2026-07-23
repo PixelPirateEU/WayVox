@@ -10,7 +10,7 @@ class GlobalHotkeyListener(QThread):
 
     hotkey_pressed = Signal()
 
-    def __init__(self, combo_str: str = "KEY_LEFTCTRL+KEY_LEFTMETA+KEY_A", device_path: str = None):
+    def __init__(self, combo_str: str = "KEY_F12", device_path: str = None):
         super().__init__()
         self.combo_str = combo_str.upper()
         self.device_path = device_path
@@ -19,7 +19,7 @@ class GlobalHotkeyListener(QThread):
         self._target_keys = {self._normalize_key(k) for k in self.combo_str.split("+")}
 
     def _normalize_key(self, key_str: str) -> str:
-        """Normalisiert Tastenbezeichnungen für flexible Eingabe (Meta, Alt, Ctrl, Buchstabentasten)."""
+        """Normalisiert Tastenbezeichnungen für flexible Eingabe (Meta, Alt, Ctrl, F-Tasten, Buchstabentasten)."""
         k = key_str.upper().strip()
         if not k.startswith("KEY_"):
             k = f"KEY_{k}"
@@ -80,7 +80,7 @@ class GlobalHotkeyListener(QThread):
                     capabilities = dev.capabilities()
                     if ecodes.EV_KEY in capabilities:
                         keys = capabilities[ecodes.EV_KEY]
-                        if ecodes.KEY_A in keys or ecodes.KEY_SPACE in keys or ecodes.KEY_X in keys:
+                        if ecodes.KEY_A in keys or ecodes.KEY_SPACE in keys or ecodes.KEY_F12 in keys or ecodes.KEY_X in keys:
                             devices.append(dev)
                 except (PermissionError, OSError):
                     continue

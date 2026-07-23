@@ -21,7 +21,7 @@
   },
   "hotkey": {
     "enabled": true,
-    "combination": "KEY_LEFTCTRL+KEY_LEFTMETA+KEY_A",
+    "combination": "KEY_F12",
     "device_path": null
   },
   "ui": {
