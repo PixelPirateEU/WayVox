@@ -1,0 +1,35 @@
+{
+  "model": {
+    "name": "large-v3",
+    "device": "cuda",
+    "compute_type": "float16",
+    "language": "de",
+    "beam_size": 5,
+    "initial_prompt": "Das ist ein deutscher Text in hoher Qualität."
+  },
+  "audio": {
+    "sample_rate": 16000,
+    "channels": 1,
+    "device_index": null,
+    "feedback_sounds": true,
+    "feedback_volume": 0.3
+  },
+  "injection": {
+    "method": "wtype",
+    "paste_delay_ms": 50,
+    "fallback_to_clipboard": true
+  },
+  "hotkey": {
+    "enabled": true,
+    "combination": "KEY_LEFTALT+KEY_SPACE",
+    "device_path": null
+  },
+  "ui": {
+    "size": 120,
+    "border_width": 6,
+    "position_x": 100,
+    "position_y": 100,
+    "always_on_top": true,
+    "show_label": true
+  }
+}

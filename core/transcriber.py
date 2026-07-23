@@ -1,0 +1,97 @@
+import numpy as np
+import logging
+import time
+from PySide6.QtCore import QObject, Signal, Slot, QThread
+
+logger = logging.getLogger("WayVox.Transcriber")
+
+class WhisperTranscriberWorker(QObject):
+    """Arbeitsthread für die CUDA-beschleunigte lokale Sprachverarbeitung via faster-whisper."""
+
+    model_loaded = Signal()
+    transcription_started = Signal()
+    transcription_finished = Signal(str)
+    transcription_error = Signal(str)
+
+    def __init__(self, model_name: str = "large-v3", device: str = "cuda", 
+                 compute_type: str = "float16", language: str = "de", 
+                 beam_size: int = 5, initial_prompt: str = None):
+        super().__init__()
+        self.model_name = model_name
+        self.device = device
+        self.compute_type = compute_type
+        self.language = language
+        self.beam_size = beam_size
+        self.initial_prompt = initial_prompt
+        self.model = None
+
+    @Slot()
+    def load_model(self):
+        """Lädt das faster-whisper Modell auf die NVIDIA GPU (CUDA)."""
+        if self.model is not None:
+            return
+
+        try:
+            logger.info(f"Lade Whisper-Modell '{self.model_name}' auf Gerät '{self.device}' ({self.compute_type})...")
+            from faster_whisper import WhisperModel
+
+            start_time = time.time()
+            self.model = WhisperModel(
+                self.model_name,
+                device=self.device,
+                compute_type=self.compute_type
+            )
+            load_time = time.time() - start_time
+            logger.info(f"Whisper-Modell '{self.model_name}' erfolgreich in {load_time:.2f}s geladen.")
+            self.model_loaded.emit()
+
+        except Exception as e:
+            error_msg = f"Fehler beim Laden des Whisper-Modells auf CUDA: {e}"
+            logger.error(error_msg)
+            self.transcription_error.emit(error_msg)
+
+    @Slot(np.ndarray)
+    def transcribe(self, audio_data: np.ndarray):
+        """Transkribiert das übergebene NumPy Audio-Array (float32, 16kHz)."""
+        if audio_data is None or len(audio_data) == 0:
+            logger.warning("Keine Audiodaten zur Transkription empfangen.")
+            self.transcription_finished.emit("")
+            return
+
+        self.transcription_started.emit()
+
+        try:
+            if self.model is None:
+                self.load_model()
+                if self.model is None:
+                    raise RuntimeError("Whisper-Modell ist nicht initialisiert.")
+
+            start_time = time.time()
+            # Mindestdauer sicherstellen (falls zu kurz)
+            duration_sec = len(audio_data) / 16000.0
+            if duration_sec < 0.5:
+                logger.warning("Audioaufnahme ist zu kurz (< 0.5s). Transkription übersprungen.")
+                self.transcription_finished.emit("")
+                return
+
+            logger.info(f"Starte CUDA-Transkription (Länge: {duration_sec:.2f}s)...")
+            segments, info = self.model.transcribe(
+                audio_data,
+                beam_size=self.beam_size,
+                language=self.language if self.language else None,
+                initial_prompt=self.initial_prompt
+            )
+
+            # Segmente zusammenfügen
+            text_segments = [segment.text.strip() for segment in segments]
+            full_text = " ".join(text_segments).strip()
+            
+            elapsed = time.time() - start_time
+            logger.info(f"Transkription abgeschlossen in {elapsed:.2f}s! Text: '{full_text}'")
+            
+            self.transcription_finished.emit(full_text)
+
+        except Exception as e:
+            error_msg = f"Fehler bei der CUDA-Transkription: {e}"
+            logger.error(error_msg)
+            self.transcription_error.emit(error_msg)
