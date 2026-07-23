@@ -35,7 +35,8 @@ class CircleOverlay(QWidget):
         self._blink_visible = True
 
         # Dragging Variablen
-        self._drag_pos = QPoint()
+        self._drag_start_global = QPoint()
+        self._drag_start_window = QPoint()
         self._is_dragging = False
 
         self._init_ui(pos_x, pos_y)
@@ -48,8 +49,7 @@ class CircleOverlay(QWidget):
             Qt.WindowType.FramelessWindowHint |
             Qt.WindowType.WindowStaysOnTopHint |
             Qt.WindowType.WindowDoesNotAcceptFocus |
-            Qt.WindowType.Tool |
-            Qt.WindowType.BypassWindowManagerHint
+            Qt.WindowType.Tool
         )
         self.setWindowFlags(flags)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
@@ -207,7 +207,8 @@ class CircleOverlay(QWidget):
     def mousePressEvent(self, event):
         """Unterstützt Drag-and-Drop Verschieben sowie Klick-Erkennung."""
         if event.button() == Qt.MouseButton.LeftButton:
-            self._drag_pos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+            self._drag_start_global = event.globalPosition().toPoint()
+            self._drag_start_window = self.pos()
             self._is_dragging = False
             event.accept()
         elif event.button() == Qt.MouseButton.RightButton:
@@ -216,8 +217,10 @@ class CircleOverlay(QWidget):
     def mouseMoveEvent(self, event):
         """Verschiebt das Overlay sanft auf dem Bildschirm."""
         if event.buttons() & Qt.MouseButton.LeftButton:
-            self._is_dragging = True
-            self.move(event.globalPosition().toPoint() - self._drag_pos)
+            delta = event.globalPosition().toPoint() - self._drag_start_global
+            if delta.manhattanLength() > 3:
+                self._is_dragging = True
+                self.move(self._drag_start_window + delta)
             event.accept()
 
     def mouseReleaseEvent(self, event):

@@ -8,7 +8,27 @@ import sys
 import os
 import signal
 import logging
-from PySide6.QtCore import QThread, Slot
+# Dynamic LD_LIBRARY_PATH update for CUDA / cuBLAS libraries in site-packages & system paths
+try:
+    import site
+    site_pkgs = site.getsitepackages()
+    ld_paths = [
+        "/opt/cuda/lib64",
+        "/opt/cuda/targets/x86_64-linux/lib",
+        "/usr/lib",
+    ]
+    for sp in site_pkgs:
+        ld_paths.extend([
+            os.path.join(sp, "nvidia", "cublas", "lib"),
+            os.path.join(sp, "nvidia", "cudnn", "lib"),
+            os.path.join(sp, "nvidia", "cuda_runtime", "lib"),
+        ])
+    existing_ld = os.environ.get("LD_LIBRARY_PATH", "")
+    os.environ["LD_LIBRARY_PATH"] = ":".join([p for p in ld_paths if os.path.exists(p)]) + (f":{existing_ld}" if existing_ld else "")
+except Exception:
+    pass
+
+from PySide6.QtCore import QObject, QThread, Slot
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from utils.config import ConfigManager
@@ -29,10 +49,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger("WayVox.Main")
 
-class WayVoxApp:
+class WayVoxApp(QObject):
     """Hauptsteuerungsklasse der WayVox Anwendung."""
 
     def __init__(self, app: QApplication):
+        super().__init__()
         self.app = app
         
         # 1. Konfiguration laden
