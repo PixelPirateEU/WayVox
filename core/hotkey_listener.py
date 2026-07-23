@@ -125,6 +125,27 @@ class GlobalHotkeyListener(QThread):
                 pass
         return True
 
+    def _extract_pynput_key(self, key) -> str:
+        """Extrahiert saubere Key-Strings aus pynput Key / KeyCode Objekten (auch unter Steuerungstasten wie Ctrl)."""
+        if hasattr(key, 'vk') and key.vk is not None:
+            if 65 <= key.vk <= 90 or 97 <= key.vk <= 122:
+                return f"KEY_{chr(key.vk).upper()}"
+
+        if hasattr(key, 'name') and key.name:
+            return f"KEY_{key.name.upper()}"
+
+        if hasattr(key, 'char') and key.char:
+            c = key.char
+            # Steuerzeichen \x01 bis \x1a (Ctrl+A bis Ctrl+Z) abfangen
+            if len(c) == 1 and 1 <= ord(c) <= 26:
+                return f"KEY_{chr(ord(c) + 64)}"
+            return f"KEY_{c.upper()}"
+
+        s = str(key).upper().replace("'", "")
+        if not s.startswith("KEY_"):
+            s = f"KEY_{s}"
+        return s
+
     def _run_pynput(self):
         """Fallback über pynput Listener."""
         try:
@@ -132,8 +153,7 @@ class GlobalHotkeyListener(QThread):
 
             def on_press(key):
                 try:
-                    key_name = key.name.upper() if hasattr(key, 'name') else str(key).upper()
-                    key_str = f"KEY_{key_name}" if not key_name.startswith("KEY_") else key_name
+                    key_str = self._extract_pynput_key(key)
                     norm_key = self._normalize_key(key_str)
                     self._keys_pressed.add(norm_key)
                     self._check_combination()
@@ -142,8 +162,7 @@ class GlobalHotkeyListener(QThread):
 
             def on_release(key):
                 try:
-                    key_name = key.name.upper() if hasattr(key, 'name') else str(key).upper()
-                    key_str = f"KEY_{key_name}" if not key_name.startswith("KEY_") else key_name
+                    key_str = self._extract_pynput_key(key)
                     norm_key = self._normalize_key(key_str)
                     self._keys_pressed.discard(norm_key)
                 except Exception:
