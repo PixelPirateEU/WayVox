@@ -18,7 +18,7 @@ Führe im Terminal folgende Befehle aus, um  wtype ,  ydotool , PortAudio, CUDA-
     # 1. Virtual Environment erstellen
     python3 -m venv venv           
 
-    # 2. Abhängigkeiten direkt in die virtuelle Umgebung installieren (funktioniert in JEDER Shell wie Fish, Bash, Zsh):
+    # 2. Abhängigkeiten & CUDA-Bibliotheken (libcublas.so.12) installieren:
     ./venv/bin/pip install -r requirements.txt       
 
     # Optional: Falls du die Umgebung manuell in deiner Shell aktivieren möchtest:
