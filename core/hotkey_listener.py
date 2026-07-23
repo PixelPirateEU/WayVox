@@ -10,7 +10,7 @@ class GlobalHotkeyListener(QThread):
 
     hotkey_pressed = Signal()
 
-    def __init__(self, combo_str: str = "KEY_LEFTMETA+KEY_X", device_path: str = None):
+    def __init__(self, combo_str: str = "KEY_LEFTCTRL+KEY_LEFTMETA+KEY_A", device_path: str = None):
         super().__init__()
         self.combo_str = combo_str.upper()
         self.device_path = device_path
