@@ -6,8 +6,8 @@ Führe im Terminal folgende Befehle aus, um  wtype ,  ydotool , PortAudio, CUDA-
     # 2. Eigenen Benutzer zur 'input' Gruppe hinzufügen (für globale evdev Hotkeys)
     sudo usermod -aG input $USER
     
-    # 3. ydotoold Daemon aktivieren (optional, falls ydotool genutzt wird)
-    sudo systemctl enable --now ydotoold
+    # 3. ydotool User Daemon aktivieren (optional, falls ydotool genutzt wird)
+    systemctl --user enable --now ydotool
     
   │ Hinweis zu  input -Rechten: Nach  sudo usermod -aG input $USER  ist einmalig ein Abmelden/Anmelden in CachyOS erforderlich, damit die Rechte wirksam werden.
   
