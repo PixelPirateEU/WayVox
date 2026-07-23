@@ -41,13 +41,17 @@ class AudioFeedback:
             logger.warning(f"Audio-Feedback konnte nicht abgespielt werden: {e}")
 
     def play_start(self):
-        """Dezenter aufsteigender Zweiklang beim Start der Aufnahme (z.B. 440 Hz -> 880 Hz)."""
-        self._play_tone([523.25, 659.25], duration_ms=100)  # C5 + E5 harmonischer Start
+        """Klarer, aufsteigender Signalton beim Start der Aufnahme (880 Hz / 1320 Hz)."""
+        self._play_tone([880.0, 1320.0], duration_ms=100)
 
     def play_stop(self):
-        """Dezenter absteigender Ton beim Stopp der Aufnahme (z.B. 659 Hz -> 440 Hz)."""
-        self._play_tone([659.25, 523.25], duration_ms=120)  # E5 -> C5 Stopp
+        """Klarer, absteigender Signalton beim Beenden der Aufnahme (660 Hz / 440 Hz)."""
+        self._play_tone([660.0, 440.0], duration_ms=110)
+
+    def play_success(self):
+        """Angenehmer Erfolgs-Signalton beim Einfügen (1046.5 Hz)."""
+        self._play_tone([1046.5], duration_ms=90)
 
     def play_error(self):
-        """Tiefer Fehlerton bei Exceptions (z.B. 220 Hz)."""
-        self._play_tone([220.0, 233.08], duration_ms=250)  # Low dissonance error tone
+        """Tiefer Warn-Signalton bei Fehlern (220 Hz)."""
+        self._play_tone([220.0, 233.08], duration_ms=200)

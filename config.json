@@ -12,7 +12,7 @@
     "channels": 1,
     "device_index": null,
     "feedback_sounds": true,
-    "feedback_volume": 0.3
+    "feedback_volume": 0.4
   },
   "injection": {
     "method": "ydotool",

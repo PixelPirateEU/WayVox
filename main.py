@@ -191,6 +191,7 @@ class WayVoxApp(QObject):
             logger.info(f"Transkription erhalten: '{text}'")
             success = self.injector.inject_text(text)
             if success:
+                self.feedback.play_success()
                 self.overlay.set_state(AppState.SUCCESS)
             else:
                 self.overlay.set_state(AppState.ERROR)
