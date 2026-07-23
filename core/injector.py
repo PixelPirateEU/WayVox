@@ -21,22 +21,17 @@ class TextInjector:
             logger.info("Kein Text zum Einfügen vorhanden.")
             return False
 
-        logger.info(f"Füge Text via '{self.method}' ein ({len(text)} Zeichen)...")
+        logger.info(f"Füge Text ein ({len(text)} Zeichen)...")
         time.sleep(self.paste_delay_ms / 1000.0)
 
-        success = False
+        # Versuche zuerst Wtype, falls konfiguriert und vom Compositor unterstützt
         if self.method == "wtype" and self._wtype_supported:
-            success = self._inject_wtype(text)
+            if self._inject_wtype(text):
+                return True
 
-        if not success and shutil.which("ydotool"):
-            logger.info("Versuche Injektion via ydotool...")
-            success = self._inject_ydotool(text)
-
-        if not success and self.fallback_to_clipboard:
-            logger.warning("Direkte Tastatur-Injektion fehlgeschlagen. Versuche Zwischenablage-Fallback (Strg+V)...")
-            success = self._inject_clipboard(text)
-
-        return success
+        # Für perfekte Layout-Treue (z. B. deutsches QWERTZ, Umlöute Ä/Ö/Ü, Z/Y),
+        # nutzen wir primär den Zwischenablage-Injektor mit automatischer Strg+V Simulation.
+        return self._inject_clipboard(text)
 
     def _inject_wtype(self, text: str) -> bool:
         """Nutzt native Wayland Virtual Keyboard Protokoll via 'wtype'."""
@@ -50,7 +45,7 @@ class TextInjector:
                 return True
             else:
                 err_msg = result.stderr.strip() or result.stdout.strip()
-                logger.warning(f"wtype vom Compositor nicht unterstützt ({err_msg}). Deaktiviere wtype.")
+                logger.warning(f"wtype vom Compositor nicht unterstützt ({err_msg}). Wechsle auf Zwischenablage.")
                 self._wtype_supported = False
                 return False
         except Exception as e:
@@ -58,79 +53,71 @@ class TextInjector:
             self._wtype_supported = False
             return False
 
-    def _inject_ydotool(self, text: str) -> bool:
-        """Nutzt uinput Daemon via 'ydotool'."""
-        if not shutil.which("ydotool"):
-            return False
-
-        try:
-            result = subprocess.run(["ydotool", "type", "--", text], capture_output=True, text=True, timeout=1.5)
-            return result.returncode == 0
-        except Exception as e:
-            logger.warning(f"Fehler bei ydotool Injektion (Ist ydotoold gestartet?): {e}")
-            return False
-
     def _inject_clipboard(self, text: str) -> bool:
-        """Kopiert den Text in die Zwischenablage (wl-copy / Qt Clipboard) und simuliert Strg+V."""
+        """Kopiert den Text in die Zwischenablage (Qt / wl-copy) und simuliert sicher Strg+V."""
         copied = False
         try:
+            # 1. Text in die Qt-Zwischenablage setzen
+            clipboard = QGuiApplication.clipboard()
+            if clipboard:
+                clipboard.setText(text)
+                copied = True
+
+            # 2. Zusätzlich per wl-copy via Stdin absichern
             if shutil.which("wl-copy"):
-                res = subprocess.run(["wl-copy", text], capture_output=True, timeout=1.5)
-                copied = (res.returncode == 0)
-            
-            if not copied:
-                clipboard = QGuiApplication.clipboard()
-                if clipboard:
-                    clipboard.setText(text)
+                try:
+                    subprocess.run(["wl-copy"], input=text.encode("utf-8"), capture_output=True, timeout=1.0)
                     copied = True
-
-            time.sleep(0.08)
-
-            # Tastenkombination Strg+V versuchen
-            pasted = False
-            if self._wtype_supported and shutil.which("wtype"):
-                try:
-                    res = subprocess.run(["wtype", "-M", "ctrl", "-k", "v", "-m", "ctrl"], capture_output=True, timeout=1.5)
-                    pasted = (res.returncode == 0)
-                    if not pasted:
-                        self._wtype_supported = False
                 except Exception:
-                    self._wtype_supported = False
+                    pass
 
-            if not pasted:
-                try:
-                    from pynput.keyboard import Controller, Key
-                    kb = Controller()
-                    with kb.pressed(Key.ctrl):
-                        kb.press('v')
-                        kb.release('v')
-                    pasted = True
-                    logger.info("Strg+V Tasteneingabe via pynput simuliert.")
-                except Exception as ex_pynput:
-                    logger.debug(f"pynput Strg+V fehlgeschlagen: {ex_pynput}")
+            if not copied:
+                logger.error("Konnte Text nicht in die Zwischenablage kopieren.")
+                return False
 
-            if not pasted and shutil.which("ydotool"):
+            time.sleep(0.05)
+
+            # 3. Tastenkombination Strg+V sicher simulieren (mit try...finally gegen Hängenbleiben)
+            pasted = False
+
+            # Versuch A: pynput Keyboard Controller
+            try:
+                from pynput.keyboard import Controller, Key
+                kb = Controller()
                 try:
-                    res = subprocess.run(["ydotool", "key", "29:1", "47:1", "47:0", "29:0"], capture_output=True, timeout=1.5)
+                    kb.press(Key.ctrl)
+                    kb.press('v')
+                    time.sleep(0.03)
+                finally:
+                    kb.release('v')
+                    kb.release(Key.ctrl)
+                pasted = True
+                logger.info("Strg+V erfolgreich via pynput simuliert.")
+            except Exception as ex_pynput:
+                logger.debug(f"pynput Strg+V Simulation fehlgeschlagen: {ex_pynput}")
+
+            # Versuch B: wtype (falls unterstützt)
+            if not pasted and self._wtype_supported and shutil.which("wtype"):
+                try:
+                    res = subprocess.run(["wtype", "-M", "ctrl", "-k", "v", "-m", "ctrl"], capture_output=True, timeout=1.0)
                     pasted = (res.returncode == 0)
                 except Exception:
                     pass
 
+            # Versuch C: xdotool (falls Xwayland / X11)
             if not pasted and shutil.which("xdotool"):
                 try:
-                    res = subprocess.run(["xdotool", "key", "ctrl+v"], capture_output=True, timeout=1.5)
+                    res = subprocess.run(["xdotool", "key", "ctrl+v"], capture_output=True, timeout=1.0)
                     pasted = (res.returncode == 0)
                 except Exception:
                     pass
 
             if pasted:
-                logger.info("Text via Zwischenablage (Strg+V) erfolgreich eingefügt.")
-                return True
-            elif copied:
-                logger.info("Text wurde erfolgreich in die Zwischenablage kopiert! (Strg+V manuell möglich).")
+                logger.info("Text via Zwischenablage (Strg+V) erfolgreich eingefügt!")
                 return True
             else:
-                return False
+                logger.info("Text wurde in die Zwischenablage kopiert. (Strg+V manuell möglich).")
+                return True
 
         except Exception as e:
             logger.error(f"Fehler bei Clipboard-Injektion: {e}")
