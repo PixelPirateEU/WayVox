@@ -40,13 +40,33 @@ class TextInjector:
         return self._inject_clipboard(text)
 
     def _inject_ydotool(self, text: str) -> bool:
-        """Nutzt uinput Kernel Daemon via 'ydotool type'."""
+        """Nutzt uinput Kernel Daemon via 'ydotool' (mit UTF-8 Umlaut-Unterstützung)."""
         if not shutil.which("ydotool"):
             logger.info("ydotool ist nicht im PATH installiert.")
             return False
 
         try:
-            logger.info("Tippe Text direkt via ydotool in das aktive Fenster...")
+            has_special = any(ord(c) > 127 or c in "äöüßÄÖÜ" for c in text)
+            if has_special:
+                logger.info("Text enthält deutsche Umlaute/Sonderzeichen. Nutze ydotool Strg+V für 100% UTF-8 QWERTZ-Darstellung...")
+                # 1. Text in Zwischenablage setzen
+                clipboard = QGuiApplication.clipboard()
+                if clipboard:
+                    clipboard.setText(text)
+                if shutil.which("wl-copy"):
+                    try:
+                        subprocess.run(["wl-copy"], input=text.encode("utf-8"), capture_output=True, timeout=1.0)
+                    except Exception:
+                        pass
+                
+                time.sleep(0.05)
+                # 2. Strg+V via ydotool key auslösen (29:1 = Ctrl Down, 47:1 = V Down, 47:0 = V Up, 29:0 = Ctrl Up)
+                res = subprocess.run(["ydotool", "key", "29:1", "47:1", "47:0", "29:0"], capture_output=True, timeout=2.0)
+                if res.returncode == 0:
+                    logger.info("Text mit Umlauten erfolgreich via ydotool eingefügt!")
+                    return True
+
+            logger.info("Tippe Text direkt via ydotool type in das aktive Fenster...")
             result = subprocess.run(["ydotool", "type", text], capture_output=True, text=True, timeout=5.0)
             if result.returncode == 0:
                 logger.info("Text erfolgreich via ydotool getippt!")
