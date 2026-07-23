@@ -192,7 +192,7 @@ class CircleOverlay(QWidget):
             text = "Aufnahme..."
             color = QColor(248, 113, 113)
         elif self.current_state == AppState.TRANSCRIBING:
-            text = "CUDA..."
+            text = "Verarbeitung..."
             color = QColor(253, 224, 71)
         elif self.current_state == AppState.SUCCESS:
             text = "Eingefügt!"
