@@ -1,16 +1,7 @@
 Führe im Terminal folgende Befehle aus, um  wtype ,  ydotool , PortAudio, CUDA-Treiber und Hilfswerkzeuge zu installieren:
   
     # 1. Systempakete & Wayland Tools installieren
-    sudo pacman -Syu --needed \
-        base-devel \           
-        python \    
-        python-pip \
-        portaudio \ 
-        wtype \    
-        ydotool \
-        wl-clipboard \
-        cuda \        
-        cudnn  
+    sudo pacman -Syu --needed base-devel python python-pip portaudio wtype ydotool wl-clipboard cuda cudnn      
              
     # 2. Eigenen Benutzer zur 'input' Gruppe hinzufügen (für globale evdev Hotkeys)
     sudo usermod -aG input $USER
