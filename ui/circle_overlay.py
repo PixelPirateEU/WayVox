@@ -215,12 +215,16 @@ class CircleOverlay(QWidget):
             self._show_context_menu(event.globalPosition().toPoint())
 
     def mouseMoveEvent(self, event):
-        """Verschiebt das Overlay sanft auf dem Bildschirm."""
+        """Verschiebt das Overlay sanft auf dem Bildschirm via Wayland Native Move."""
         if event.buttons() & Qt.MouseButton.LeftButton:
             delta = event.globalPosition().toPoint() - self._drag_start_global
-            if delta.manhattanLength() > 3:
+            if delta.manhattanLength() > 5:
                 self._is_dragging = True
-                self.move(self._drag_start_window + delta)
+                wh = self.windowHandle()
+                if wh and hasattr(wh, "startSystemMove") and wh.startSystemMove():
+                    pass
+                else:
+                    self.move(self._drag_start_window + delta)
             event.accept()
 
     def mouseReleaseEvent(self, event):
