@@ -8,8 +8,8 @@ import sys
 import os
 import signal
 import logging
-from PySide6.QtCore import QApplication, QThread, Slot
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtCore import QThread, Slot
+from PySide6.QtWidgets import QApplication, QMessageBox
 
 from utils.config import ConfigManager
 from utils.audio_feedback import AudioFeedback

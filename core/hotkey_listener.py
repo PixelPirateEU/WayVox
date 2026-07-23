@@ -33,7 +33,7 @@ class GlobalHotkeyListener(QThread):
         self._running = False
         self.wait(1000)
 
-    def _run_evdev( -> bool:
+    def _run_evdev(self) -> bool:
         """Nutzt /dev/input via python-evdev."""
         try:
             import evdev
