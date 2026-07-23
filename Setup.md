@@ -15,19 +15,15 @@ Führe im Terminal folgende Befehle aus, um  wtype ,  ydotool , PortAudio, CUDA-
   
     cd WayVox
              
-    # Virtual Environment erstellen
+    # 1. Virtual Environment erstellen
     python3 -m venv venv           
-    
-    # Virtual Environment aktivieren (je nach Shell):
-    source venv/bin/activate       # Für Bash / Zsh
-    # ODER für Fish Shell:
-    # source venv/bin/activate.fish
-    
-    # PyTorch mit CUDA 12.x Unterstützung installieren (optimal für RTX 5070 Ti)
-    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-    
-    # Restliche Anforderungen installieren
-    pip install -r requirements.txt       
+
+    # 2. Abhängigkeiten direkt in die virtuelle Umgebung installieren (funktioniert in JEDER Shell wie Fish, Bash, Zsh):
+    ./venv/bin/pip install -r requirements.txt       
+
+    # Optional: Falls du die Umgebung manuell in deiner Shell aktivieren möchtest:
+    # Für Fish Shell:    source venv/bin/activate.fish
+    # Für Bash / Zsh:    source venv/bin/activate       
     
   #### Schritt 3: Anwendung starten
   
