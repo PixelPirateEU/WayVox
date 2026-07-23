@@ -180,10 +180,41 @@ class CircleOverlay(QWidget):
             painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.drawEllipse(rect)
 
+    def _draw_microphone_icon(self, painter: QPainter, color: QColor, center_x: float, center_y: float):
+        """Zeichnet ein modernes Vektor-Mikrofonsymbol im Zentrum des Overlays."""
+        painter.save()
+        
+        pen = QPen(color, 2)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        painter.setPen(pen)
+        painter.setBrush(QBrush(color))
+
+        # 1. Mikrofon-Kapsel (abgerundetes Rechteck)
+        mic_w, mic_h = 10, 16
+        mic_x = center_x - mic_w / 2
+        mic_y = center_y - 12
+        painter.drawRoundedRect(QRectF(mic_x, mic_y, mic_w, mic_h), 5, 5)
+
+        # 2. Halte-Bügel (U-Form / Bogen)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        arc_w, arc_h = 18, 16
+        arc_x = center_x - arc_w / 2
+        arc_y = center_y - 7
+        painter.drawArc(QRectF(arc_x, arc_y, arc_w, arc_h), 180 * 16, 180 * 16)
+
+        # 3. Ständer & Standfuß
+        stem_y1 = arc_y + arc_h / 2 + 1
+        stem_y2 = stem_y1 + 5
+        painter.drawLine(int(center_x), int(stem_y1), int(center_x), int(stem_y2))
+        painter.drawLine(int(center_x - 5), int(stem_y2), int(center_x + 5), int(stem_y2))
+
+        painter.restore()
+
     def _draw_center_text(self, painter: QPainter):
-        """Zeichnet den Statustext in das Zentrum des Kreises."""
-        font = QFont("Sans-Serif", 9, QFont.Weight.Bold)
-        painter.setFont(font)
+        """Zeichnet das Vektor-Mikrofonsymbol und den Statustext in das Zentrum des Kreises."""
+        cx = self.width() / 2.0
+        cy = self.height() / 2.0
 
         if self.current_state == AppState.IDLE:
             text = "Bereit"
@@ -201,8 +232,16 @@ class CircleOverlay(QWidget):
             text = "Fehler!"
             color = QColor(252, 165, 165)
 
+        # 1. Vektor-Mikrofon oberhalb der Mitte zeichnen
+        self._draw_microphone_icon(painter, color, cx, cy - 8)
+
+        # 2. Statustext unterhalb des Mikrofon-Icons zeichnen
+        font = QFont("Sans-Serif", 8, QFont.Weight.Bold)
+        painter.setFont(font)
         painter.setPen(color)
-        painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, text)
+
+        text_rect = QRectF(0, cy + 12, self.width(), 24)
+        painter.drawText(text_rect, Qt.AlignmentFlag.AlignCenter, text)
 
     def mousePressEvent(self, event):
         """Unterstützt Drag-and-Drop Verschieben sowie Klick-Erkennung."""
