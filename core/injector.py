@@ -45,11 +45,11 @@ class TextInjector:
                 return True
             else:
                 err_msg = result.stderr.strip() or result.stdout.strip()
-                logger.warning(f"wtype vom Compositor nicht unterstützt ({err_msg}). Wechsle auf Zwischenablage.")
+                logger.info(f"wtype vom Compositor nicht unterstützt ({err_msg}). Verwende Zwischenablage (Strg+V).")
                 self._wtype_supported = False
                 return False
         except Exception as e:
-            logger.warning(f"Fehler bei wtype Injektion: {e}")
+            logger.info(f"wtype nicht verfügbar ({e}). Verwende Zwischenablage (Strg+V).")
             self._wtype_supported = False
             return False
 

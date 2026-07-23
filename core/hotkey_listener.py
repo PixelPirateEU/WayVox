@@ -49,7 +49,7 @@ class GlobalHotkeyListener(QThread):
 
         # Versuche zuerst evdev (empfohlener Linux/Wayland Weg)
         if not self._run_evdev():
-            logger.warning("evdev konnte nicht gestartet werden. Versuche Fallback auf pynput...")
+            logger.info("Nutze pynput für die globale Hotkey-Überwachung...")
             self._run_pynput()
 
     def stop(self):
@@ -86,7 +86,7 @@ class GlobalHotkeyListener(QThread):
                     continue
 
         if not devices:
-            logger.warning("Keine zugänglichen Tastaturgeräte unter /dev/input/ gefunden. (Rechte prüfen: 'sudo usermod -aG input $USER')")
+            logger.debug("Keine direkt zugänglichen /dev/input/ Geräte gefunden. Wechsel zu pynput...")
             return False
 
         logger.info(f"Überwache {len(devices)} Eingabegeräte für globale Hotkeys...")
