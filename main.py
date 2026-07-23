@@ -8,6 +8,13 @@ import sys
 import os
 import signal
 import logging
+
+# Auto-switch to virtual environment Python if available
+script_dir = os.path.dirname(os.path.abspath(__file__))
+venv_python = os.path.join(script_dir, "venv", "bin", "python3")
+if os.path.exists(venv_python) and os.path.realpath(sys.executable) != os.path.realpath(venv_python):
+    os.execv(venv_python, [venv_python] + sys.argv)
+
 # Dynamic LD_LIBRARY_PATH update for CUDA / cuBLAS libraries in site-packages & system paths
 try:
     import site
