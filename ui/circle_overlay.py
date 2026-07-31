@@ -267,16 +267,13 @@ class CircleOverlay(QWidget):
             self._show_context_menu(event.globalPosition().toPoint())
 
     def mouseMoveEvent(self, event):
-        """Verschiebt das Overlay sanft auf dem Bildschirm via Wayland Native Move."""
+        """Verschiebt das Overlay sanft auf dem Bildschirm."""
         if event.buttons() & Qt.MouseButton.LeftButton:
             delta = event.globalPosition().toPoint() - self._drag_start_global
             if delta.manhattanLength() > 5:
                 self._is_dragging = True
-                wh = self.windowHandle()
-                if wh and hasattr(wh, "startSystemMove") and wh.startSystemMove():
-                    pass
-                else:
-                    self.move(self._drag_start_window + delta)
+                new_pos = self._drag_start_window + delta
+                self.move(new_pos)
             event.accept()
 
     def mouseReleaseEvent(self, event):
@@ -284,11 +281,6 @@ class CircleOverlay(QWidget):
         if event.button() == Qt.MouseButton.LeftButton:
             if self._is_dragging:
                 curr_pos = self.pos()
-                if self.windowHandle() and hasattr(self.windowHandle(), "position"):
-                    wh_pos = self.windowHandle().position()
-                    if not wh_pos.isNull():
-                        curr_pos = wh_pos
-
                 self._target_pos = curr_pos
                 logger.info(f"Overlay nach Drag auf neue Position gesetzt: x={curr_pos.x()}, y={curr_pos.y()}")
                 self.position_changed.emit(curr_pos.x(), curr_pos.y())
@@ -302,6 +294,7 @@ class CircleOverlay(QWidget):
         """Emittiert das position_changed Signal bei jeder Positionsänderung."""
         super().moveEvent(event)
         pos = self.pos()
+        self._target_pos = pos
         self.position_changed.emit(pos.x(), pos.y())
 
     def set_hotkey_tooltip(self, display_name: str):
