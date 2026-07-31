@@ -8,22 +8,51 @@ logger = logging.getLogger("WayVox.Transcriber")
 
 
 def _deduplicate_text(text: str) -> str:
-    """Entfernt versehentliche Wort- oder Satzdoppelungen am Ende des Textes."""
+    """Entfernt versehentliche Wort-, Satzdoppelungen und Whisper-Halluzinationen am Textende."""
     if not text:
         return text
 
-    words = text.split()
+    hallucinations = [
+        "vielen dank für's zuschauen",
+        "vielen dank fürs zuschauen",
+        "vielen dank für das zuschauen",
+        "vielen dank fürs zusehen",
+        "vielen dank für eure aufmerksamkeit",
+        "vielen dank.",
+        "vielen dank",
+        "untertitel der amara.org",
+        "untertitel von",
+        "subscribe",
+        "abonnieren"
+    ]
+
+    # Satzenden ohne Leerzeichen trennen (z. B. "einkaufen.Heidi" -> "einkaufen. Heidi")
+    text = re.sub(r'(?<=[.!?])(?=[A-Za-zÄÖÜäöüß])', ' ', text)
+
+    sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+|\n+', text) if s.strip()]
+    filtered_sentences = []
+    for s in sentences:
+        s_lower = s.lower().strip()
+        if any(h in s_lower for h in hallucinations) and len(s_lower) < 45:
+            continue
+        filtered_sentences.append(s)
+
+    unique_sentences = []
+    for s in filtered_sentences:
+        if not unique_sentences or s != unique_sentences[-1]:
+            unique_sentences.append(s)
+
+    result = " ".join(unique_sentences).strip()
+
+    # Wortgruppen-Deduplizierung bei exakter Wiederholung
+    words = result.split()
     n = len(words)
-    if n >= 2 and n % 2 == 0:
+    if n >= 4 and n % 2 == 0:
         half = n // 2
         if words[:half] == words[half:]:
-            return " ".join(words[:half])
+            result = " ".join(words[:half])
 
-    sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', text) if s.strip()]
-    if len(sentences) >= 2 and sentences[-1] == sentences[-2]:
-        return " ".join(sentences[:-1])
-
-    return text
+    return result
 
 class WhisperTranscriberWorker(QObject):
     """Arbeitsthread für die CUDA-beschleunigte lokale Sprachverarbeitung via faster-whisper."""
@@ -119,7 +148,12 @@ class WhisperTranscriberWorker(QObject):
                     beam_size=self.beam_size,
                     language=self.language if self.language else None,
                     initial_prompt=self.initial_prompt,
-                    condition_on_previous_text=False
+                    condition_on_previous_text=False,
+                    vad_filter=True,
+                    vad_parameters=dict(min_silence_duration_ms=500),
+                    repetition_penalty=1.2,
+                    no_repeat_ngram_size=3,
+                    hallucination_silence_threshold=1.5
                 )
                 text_segments = [segment.text.strip() for segment in segments]
             except Exception as e_cuda:
@@ -134,7 +168,12 @@ class WhisperTranscriberWorker(QObject):
                         beam_size=self.beam_size,
                         language=self.language if self.language else None,
                         initial_prompt=self.initial_prompt,
-                        condition_on_previous_text=False
+                        condition_on_previous_text=False,
+                        vad_filter=True,
+                        vad_parameters=dict(min_silence_duration_ms=500),
+                        repetition_penalty=1.2,
+                        no_repeat_ngram_size=3,
+                        hallucination_silence_threshold=1.5
                     )
                     text_segments = [segment.text.strip() for segment in segments]
                 else:
