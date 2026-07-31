@@ -97,7 +97,7 @@ class WayVoxApp(QObject):
         # 5. Text-Injector initialisieren
         inj_cfg = self.config.get("injection")
         self.injector = TextInjector(
-            method=inj_cfg.get("method", "wtype"),
+            method=inj_cfg.get("method", "clipboard"),
             paste_delay_ms=inj_cfg.get("paste_delay_ms", 50),
             fallback_to_clipboard=inj_cfg.get("fallback_to_clipboard", True)
         )

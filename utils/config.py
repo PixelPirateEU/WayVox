@@ -22,7 +22,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "feedback_volume": 0.3
     },
     "injection": {
-        "method": "wtype",
+        "method": "clipboard",
         "paste_delay_ms": 50,
         "fallback_to_clipboard": True
     },
