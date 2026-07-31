@@ -146,6 +146,7 @@ class WayVoxApp(QObject):
         self.overlay.clicked.connect(self.toggle_recording)
         self.overlay.quit_requested.connect(self.quit_app)
         self.overlay.hotkey_change_requested.connect(self.open_hotkey_dialog)
+        self.overlay.position_changed.connect(self._on_position_changed)
 
         if self.hotkey_listener:
             self.hotkey_listener.hotkey_pressed.connect(self.toggle_recording)
@@ -244,6 +245,18 @@ class WayVoxApp(QObject):
         # 3. Tooltip anpassen
         display_name = get_display_name_for_combo(new_combo)
         self.overlay.set_hotkey_tooltip(display_name)
+
+    @Slot(int, int)
+    def _on_position_changed(self, x: int, y: int):
+        """Speichert die neue Fensterposition automatisch in config.json."""
+        if "ui" not in self.config.config_data:
+            self.config.config_data["ui"] = {}
+
+        ui_cfg = self.config.config_data["ui"]
+        if ui_cfg.get("position_x") != x or ui_cfg.get("position_y") != y:
+            ui_cfg["position_x"] = x
+            ui_cfg["position_y"] = y
+            self.config.save_config()
 
     def quit_app(self):
         """Beendet die Anwendung sauber."""

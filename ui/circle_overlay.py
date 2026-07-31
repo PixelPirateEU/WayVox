@@ -21,6 +21,7 @@ class CircleOverlay(QWidget):
     clicked = Signal()
     quit_requested = Signal()
     hotkey_change_requested = Signal()
+    position_changed = Signal(int, int)
 
     def __init__(self, size: int = 120, border_width: int = 6, 
                  pos_x: int = 100, pos_y: int = 100, show_label: bool = True):
@@ -280,6 +281,12 @@ class CircleOverlay(QWidget):
                 self.clicked.emit()
             self._is_dragging = False
             event.accept()
+
+    def moveEvent(self, event):
+        """Emittiert das position_changed Signal bei jeder Positionsänderung."""
+        super().moveEvent(event)
+        pos = self.pos()
+        self.position_changed.emit(pos.x(), pos.y())
 
     def set_hotkey_tooltip(self, display_name: str):
         """Aktualisiert den Tooltip mit dem aktuellen Hotkey."""
