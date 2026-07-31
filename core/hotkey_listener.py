@@ -1,5 +1,6 @@
 import os
 import glob
+import time
 import logging
 from PySide6.QtCore import QThread, Signal
 
@@ -16,6 +17,7 @@ class GlobalHotkeyListener(QThread):
         self.device_path = device_path
         self._running = False
         self._keys_pressed = set()
+        self._last_trigger_time = 0.0
         self._target_keys = {self._normalize_key(k) for k in self.combo_str.split("+")}
 
     def _normalize_key(self, key_str: str) -> str:
@@ -190,8 +192,14 @@ class GlobalHotkeyListener(QThread):
             logger.error(f"Fehler beim pynput Hotkey-Listener: {e}")
 
     def _check_combination(self):
-        """Prüft ob alle Tasten der Zielkombination aktuell gedrückt sind."""
+        """Prüft ob alle Tasten der Zielkombination aktuell gedrückt sind (mit 350ms Entprellung)."""
         if self._target_keys.issubset(self._keys_pressed):
+            now = time.time()
+            if now - self._last_trigger_time < 0.35:
+                self._keys_pressed.clear()
+                return
+
+            self._last_trigger_time = now
             logger.info(f"Hotkey getriggert: {self.combo_str}")
             self.hotkey_pressed.emit()
             self._keys_pressed.clear()

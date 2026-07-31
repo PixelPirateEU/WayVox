@@ -1,9 +1,29 @@
+import re
 import numpy as np
 import logging
 import time
 from PySide6.QtCore import QObject, Signal, Slot, QThread
 
 logger = logging.getLogger("WayVox.Transcriber")
+
+
+def _deduplicate_text(text: str) -> str:
+    """Entfernt versehentliche Wort- oder Satzdoppelungen am Ende des Textes."""
+    if not text:
+        return text
+
+    words = text.split()
+    n = len(words)
+    if n >= 2 and n % 2 == 0:
+        half = n // 2
+        if words[:half] == words[half:]:
+            return " ".join(words[:half])
+
+    sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', text) if s.strip()]
+    if len(sentences) >= 2 and sentences[-1] == sentences[-2]:
+        return " ".join(sentences[:-1])
+
+    return text
 
 class WhisperTranscriberWorker(QObject):
     """Arbeitsthread für die CUDA-beschleunigte lokale Sprachverarbeitung via faster-whisper."""
@@ -98,7 +118,8 @@ class WhisperTranscriberWorker(QObject):
                     audio_data,
                     beam_size=self.beam_size,
                     language=self.language if self.language else None,
-                    initial_prompt=self.initial_prompt
+                    initial_prompt=self.initial_prompt,
+                    condition_on_previous_text=False
                 )
                 text_segments = [segment.text.strip() for segment in segments]
             except Exception as e_cuda:
@@ -112,13 +133,15 @@ class WhisperTranscriberWorker(QObject):
                         audio_data,
                         beam_size=self.beam_size,
                         language=self.language if self.language else None,
-                        initial_prompt=self.initial_prompt
+                        initial_prompt=self.initial_prompt,
+                        condition_on_previous_text=False
                     )
                     text_segments = [segment.text.strip() for segment in segments]
                 else:
                     raise e_cuda
 
             full_text = " ".join(text_segments).strip()
+            full_text = _deduplicate_text(full_text)
             elapsed = time.time() - start_time
             logger.info(f"Transkription abgeschlossen in {elapsed:.2f}s! Text: '{full_text}'")
             
