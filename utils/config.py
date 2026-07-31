@@ -12,7 +12,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
         "compute_type": "float16",
         "language": "de",
         "beam_size": 5,
-        "initial_prompt": "Das ist ein deutscher Text in hoher Qualität."
+        "initial_prompt": None
     },
     "audio": {
         "sample_rate": 16000,

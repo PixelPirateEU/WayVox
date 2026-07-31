@@ -18,6 +18,7 @@ class GlobalHotkeyListener(QThread):
         self._running = False
         self._keys_pressed = set()
         self._last_trigger_time = 0.0
+        self._already_triggered = False
         self._target_keys = {self._normalize_key(k) for k in self.combo_str.split("+")}
 
     def _normalize_key(self, key_str: str) -> str:
@@ -55,6 +56,7 @@ class GlobalHotkeyListener(QThread):
         self.combo_str = combo_str.upper()
         self._target_keys = {self._normalize_key(k) for k in self.combo_str.split("+")}
         self._keys_pressed.clear()
+        self._already_triggered = False
         logger.info(f"Hotkey aktualisiert auf: {self.combo_str} (Ziel-Tasten: {self._target_keys})")
 
     def run(self):
@@ -129,6 +131,8 @@ class GlobalHotkeyListener(QThread):
                                 for k in keys:
                                     norm_key = self._normalize_key(k)
                                     self._keys_pressed.discard(norm_key)
+                                if not self._target_keys.issubset(self._keys_pressed):
+                                    self._already_triggered = False
             except Exception as e:
                 if self._running:
                     logger.debug(f"evdev Lesefehler: {e}")
@@ -180,6 +184,8 @@ class GlobalHotkeyListener(QThread):
                     key_str = self._extract_pynput_key(key)
                     norm_key = self._normalize_key(key_str)
                     self._keys_pressed.discard(norm_key)
+                    if not self._target_keys.issubset(self._keys_pressed):
+                        self._already_triggered = False
                 except Exception:
                     pass
 
@@ -192,14 +198,16 @@ class GlobalHotkeyListener(QThread):
             logger.error(f"Fehler beim pynput Hotkey-Listener: {e}")
 
     def _check_combination(self):
-        """Prüft ob alle Tasten der Zielkombination aktuell gedrückt sind (mit 350ms Entprellung)."""
+        """Prüft ob alle Tasten der Zielkombination aktuell gedrückt sind (einmalige Auslösung pro Tastendruck)."""
         if self._target_keys.issubset(self._keys_pressed):
+            if self._already_triggered:
+                return
+
             now = time.time()
-            if now - self._last_trigger_time < 0.35:
-                self._keys_pressed.clear()
+            if now - self._last_trigger_time < 0.4:
                 return
 
             self._last_trigger_time = now
+            self._already_triggered = True
             logger.info(f"Hotkey getriggert: {self.combo_str}")
             self.hotkey_pressed.emit()
-            self._keys_pressed.clear()
