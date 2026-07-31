@@ -263,11 +263,7 @@ class WayVoxApp(QObject):
         # 1. Letzte Overlay-Position auslesen & einmalig speichern
         try:
             if self.overlay:
-                pos = self.overlay.pos()
-                if self.overlay.windowHandle() and hasattr(self.overlay.windowHandle(), "position"):
-                    wh_pos = self.overlay.windowHandle().position()
-                    if not wh_pos.isNull():
-                        pos = wh_pos
+                pos = self.overlay.get_current_position()
 
                 if "ui" not in self.config.config_data:
                     self.config.config_data["ui"] = {}

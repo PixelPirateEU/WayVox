@@ -260,7 +260,7 @@ class CircleOverlay(QWidget):
         """Unterstützt Drag-and-Drop Verschieben sowie Klick-Erkennung."""
         if event.button() == Qt.MouseButton.LeftButton:
             self._drag_start_global = event.globalPosition().toPoint()
-            self._drag_start_window = self.pos()
+            self._drag_start_window = QPoint(self._target_pos)
             self._is_dragging = False
             event.accept()
         elif event.button() == Qt.MouseButton.RightButton:
@@ -272,25 +272,31 @@ class CircleOverlay(QWidget):
             delta = event.globalPosition().toPoint() - self._drag_start_global
             if delta.manhattanLength() > 5:
                 self._is_dragging = True
+                self._target_pos = self._drag_start_window + delta
                 wh = self.windowHandle()
                 if wh and hasattr(wh, "startSystemMove") and wh.startSystemMove():
                     pass
                 else:
-                    self.move(self._drag_start_window + delta)
+                    self.move(self._target_pos)
             event.accept()
 
     def mouseReleaseEvent(self, event):
         """Löst den Klick-Event aus oder signalisiert Ende des Verschiebens."""
         if event.button() == Qt.MouseButton.LeftButton:
             if self._is_dragging:
-                curr_pos = self.pos()
-                self._target_pos = curr_pos
-                self.position_changed.emit(curr_pos.x(), curr_pos.y())
+                delta = event.globalPosition().toPoint() - self._drag_start_global
+                self._target_pos = self._drag_start_window + delta
+                logger.info(f"Overlay Position nach Drag berechnet: x={self._target_pos.x()}, y={self._target_pos.y()}")
+                self.position_changed.emit(self._target_pos.x(), self._target_pos.y())
                 self._is_dragging = False
             else:
                 logger.info("Overlay per Mäuseklick aktiviert/deaktiviert.")
                 self.clicked.emit()
             event.accept()
+
+    def get_current_position(self) -> QPoint:
+        """Gibt die aktuell gespeicherte Fensterposition zurück."""
+        return self._target_pos
 
     def set_hotkey_tooltip(self, display_name: str):
         """Aktualisiert den Tooltip mit dem aktuellen Hotkey."""
