@@ -49,7 +49,9 @@ class CircleOverlay(QWidget):
     def showEvent(self, event):
         """Wendet die gespeicherte Position unter KDE Plasma 6 Wayland nach dem Fenster-Mapping an."""
         super().showEvent(event)
-        QTimer.singleShot(80, lambda: self.move(self._target_pos))
+        self.move(self._target_pos)
+        QTimer.singleShot(50, lambda: self.move(self._target_pos))
+        QTimer.singleShot(200, lambda: self.move(self._target_pos))
 
     def _init_ui(self, x: int, y: int):
         """Initialisiert Fenster-Eigenschaften & Wayland-Overlay Flags."""
@@ -58,6 +60,7 @@ class CircleOverlay(QWidget):
             Qt.WindowType.FramelessWindowHint |
             Qt.WindowType.WindowStaysOnTopHint |
             Qt.WindowType.WindowDoesNotAcceptFocus |
+            Qt.WindowType.BypassWindowManagerHint |
             Qt.WindowType.Tool
         )
         self.setWindowFlags(flags)
