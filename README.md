@@ -1,5 +1,7 @@
 # 🎙️ WayVox
 
+![WayVox](WayVox.png)
+
 **WayVox** ist eine 100 % lokale, datenschutzkonforme KI-Voice-to-Text Anwendung für Linux (**Wayland / CachyOS / Arch Linux / KDE Plasma 6**). Sie verwandelt gesprochene Sprache über das KI-Modell `faster-whisper` (`large-v3`) in geschriebenen Text und fügt ihn direkt in deine aktive Anwendung ein.
 
 ---
@@ -10,7 +12,7 @@
 - ⚡ **CUDA 12 GPU-Beschleunigung**: Optimiert für NVIDIA Grafikkarten (z. B. RTX 5070 Ti) mit automatischem CPU-Fallback.
 - 🎨 **Modernes Glassmorphic UI**: Transparentes Overlay-Fenster mit interaktivem Vektor-Mikrofonsymbol und dynamischen Status-Animationen (*Bereit*, *Aufnahme*, *Verarbeitung*, *Eingefügt*).
 - 🖐️ **Natives Wayland Drag & Drop**: Das Fenster lässt sich per Mausklick frei über den gesamten Desktop und mehrere Monitore verschieben (`startSystemMove`).
-- ⌨️ **Globaler Hotkey (`F12`)**: Aufnahme flexibel und ohne Fokusverlust per Tastendruck auf `F12` starten und stoppen.
+- ⌨️ **Anpassbarer Globaler Hotkey**: Flexibler Hotkey (Standard: `F12`) zur Steuerung der Aufnahme ohne Fokusverlust. Über das Kontextmenü lässt sich die Tastenkombination zur Laufzeit beliebig anpassen (alle F-Tasten `F1`–`F12`, `Strg+M`, `Strg+^`, `Strg+<`).
 - 🇩🇪 **Perfekte QWERTZ & Umlaut-Unterstützung**: Vollständige Erhaltung deutscher Umlaute (`ä`, `ö`, `ü`, `ß`) und Sonderzeichen ohne Zeichenvertauschung (`z`/`y`).
 - 🔊 **Akustisches Feedback**: Dezente Signaltöne beim Starten, Stoppen und erfolgreichen Einfügen des Textes.
 - ⚙️ **Flexible Injektionsmethoden**: Unterstützt Kernel-level Injektion via `ydotool type` sowie universelles Zwischenablage-Pasting (Qt / `wl-copy`).
@@ -71,18 +73,21 @@ Starte die Anwendung einfach über das mitgelieferte Startskript:
 ## 🎯 Bedienung
 
 1. **Aufnahme starten/stoppen**: 
-   - Drücke die Taste **`F12`** auf deiner Tastatur (empfohlen, da der Fensterfokus in deiner Zielanwendung bleibt).
+   - Drücke deinen eingestellten Hotkey (Standard: **`F12`**) auf der Tastatur (empfohlen, da der Fensterfokus in deiner Zielanwendung bleibt).
    - Alternativ klicke mit der linken Maustaste auf den kreisförmigen Overlay-Button.
 2. **Fenster verschieben**: 
    - Halte die linke Maustaste auf dem Overlay gedrückt und ziehe es an eine beliebige Stelle auf deinem Bildschirm.
-3. **Kontextmenü & Beenden**: 
-   - Mache einen Rechtsklick auf den Kreis, um das Statusmenü zu öffnen oder WayVox zu beenden.
+3. **Kontextmenü & Hotkey anpassen**: 
+   - Mache einen **Rechtsklick** auf das Overlay-Icon, um das Kontextmenü zu öffnen:
+     - ⚙️ **Hotkey anpassen**: Öffnet ein Fenster mit einem Drop-Down-Menü zur Auswahl deines gewünschten Hotkeys (alle F-Tasten `F1`–`F12`, `Strg+M`, `Strg+^`, `Strg+<`). Der gewählte Hotkey wird sofort im laufenden Betrieb aktiviert und gespeichert.
+     - 🔄 **Reset status**: Setzt den visuellen Status des Overlays zurück auf *Bereit*.
+     - ❌ **Beenden**: Beendet WayVox sauber.
 
 ---
 
 ## ⚙️ Konfiguration (`config.json`)
 
-Die Einstellungen können in der Datei `config.json` angepasst werden:
+Die Einstellungen werden in `config.json` verwaltet und bei Änderungen über das GUI-Menü automatisch aktualisiert:
 
 ```json
 {
