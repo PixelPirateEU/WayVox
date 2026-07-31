@@ -58,8 +58,8 @@ class TextInjector:
                     pass
 
             time.sleep(0.05)
-            # 2. Strg+V via ydotool key auslösen (29:1 = Ctrl Down, 47:1 = V Down, 47:0 = V Up, 29:0 = Ctrl Up)
-            res = subprocess.run(["ydotool", "key", "29:1", "47:1", "47:0", "29:0"], capture_output=True, timeout=2.0)
+            # 2. Strg+V via ydotool key auslösen (-d 12 = 12ms Verzögerung zwischen Events verhindert Mehrfachauslösung in KWin/Wayland)
+            res = subprocess.run(["ydotool", "key", "-d", "12", "29:1", "47:1", "47:0", "29:0"], capture_output=True, timeout=2.0)
             if res.returncode == 0:
                 logger.info("Text erfolgreich via ydotool (Strg+V) eingefügt!")
                 return True
@@ -124,10 +124,12 @@ class TextInjector:
                 kb = Controller()
                 try:
                     kb.press(Key.ctrl)
+                    time.sleep(0.015)
                     kb.press('v')
                     time.sleep(0.03)
-                finally:
                     kb.release('v')
+                    time.sleep(0.015)
+                finally:
                     kb.release(Key.ctrl)
                 pasted = True
                 logger.info("Strg+V erfolgreich via pynput simuliert.")
