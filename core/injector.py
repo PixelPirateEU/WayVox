@@ -40,14 +40,17 @@ class TextInjector:
         return self._inject_clipboard(text)
 
     def _inject_ydotool(self, text: str) -> bool:
-        """Nutzt uinput Kernel Daemon via 'ydotool' mit 100% UTF-8 QWERTZ-Unterstützung (Clipboard + Strg+V)."""
+        """Fügt den Text zuverlässig via Zwischenablage (pynput / wl-copy / ydotool) ohne Mehrfachauslösung ein."""
+        # 1. Versuche zuerst die präzise Zwischenablage-Injektion (pynput / wl-copy)
+        if self._inject_clipboard(text):
+            return True
+
         if not shutil.which("ydotool"):
             logger.info("ydotool ist nicht im PATH installiert.")
             return False
 
         try:
-            logger.info("Füge Text via ydotool (Clipboard + Strg+V) für 100% QWERTZ-Darstellung ein...")
-            # 1. Text in Zwischenablage setzen (Qt Clipboard & wl-copy)
+            logger.info("Füge Text via ydotool (Clipboard + Strg+V) als Fallback ein...")
             clipboard = QGuiApplication.clipboard()
             if clipboard:
                 clipboard.setText(text)
@@ -58,8 +61,7 @@ class TextInjector:
                     pass
 
             time.sleep(0.05)
-            # 2. Strg+V via ydotool key auslösen (-d 12 = 12ms Verzögerung zwischen Events verhindert Mehrfachauslösung in KWin/Wayland)
-            res = subprocess.run(["ydotool", "key", "-d", "12", "29:1", "47:1", "47:0", "29:0"], capture_output=True, timeout=2.0)
+            res = subprocess.run(["ydotool", "key", "-d", "20", "29:1", "47:1", "47:0", "29:0"], capture_output=True, timeout=2.0)
             if res.returncode == 0:
                 logger.info("Text erfolgreich via ydotool (Strg+V) eingefügt!")
                 return True
