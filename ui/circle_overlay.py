@@ -19,6 +19,7 @@ class CircleOverlay(QWidget):
 
     clicked = Signal()
     quit_requested = Signal()
+    hotkey_change_requested = Signal()
 
     def __init__(self, size: int = 120, border_width: int = 6, 
                  pos_x: int = 100, pos_y: int = 100, show_label: bool = True):
@@ -275,12 +276,17 @@ class CircleOverlay(QWidget):
             self._is_dragging = False
             event.accept()
 
+    def set_hotkey_tooltip(self, display_name: str):
+        """Aktualisiert den Tooltip mit dem aktuellen Hotkey."""
+        self.setToolTip(f"Klick oder {display_name} zum Starten/Stoppen der Sprachaufnahme")
+
     def _show_context_menu(self, pos):
         """Kontextmenü beim Rechtsklick."""
         menu = QMenu(self)
         menu.setStyleSheet("QMenu { background-color: #1E293B; color: white; border: 1px solid #475569; } QMenu::item:selected { background-color: #3B82F6; }")
         
-        idle_action = menu.addAction("Reset Status")
+        idle_action = menu.addAction("Reset status")
+        hotkey_action = menu.addAction("Hotkey anpassen")
         menu.addSeparator()
         quit_action = menu.addAction("Beenden")
         
@@ -289,3 +295,5 @@ class CircleOverlay(QWidget):
             self.quit_requested.emit()
         elif action == idle_action:
             self.set_state(AppState.IDLE)
+        elif action == hotkey_action:
+            self.hotkey_change_requested.emit()

@@ -36,11 +36,12 @@ except Exception:
     pass
 
 from PySide6.QtCore import QObject, QThread, Slot
-from PySide6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtWidgets import QApplication, QMessageBox, QDialog
 
 from utils.config import ConfigManager
 from utils.audio_feedback import AudioFeedback
 from ui.circle_overlay import CircleOverlay, AppState
+from ui.hotkey_dialog import HotkeyDialog, get_display_name_for_combo
 from core.recorder import AudioRecorder
 from core.transcriber import WhisperTranscriberWorker
 from core.injector import TextInjector
@@ -115,10 +116,13 @@ class WayVoxApp(QObject):
 
         # 7. Globalen Hotkey-Listener initialisieren (evdev/pynput Thread)
         hotkey_cfg = self.config.get("hotkey")
+        current_hotkey = hotkey_cfg.get("combination", "KEY_F12")
+        self.overlay.set_hotkey_tooltip(get_display_name_for_combo(current_hotkey))
+
         self.hotkey_listener = None
         if hotkey_cfg.get("enabled", True):
             self.hotkey_listener = GlobalHotkeyListener(
-                combo_str=hotkey_cfg.get("combination", "KEY_LEFTALT+KEY_SPACE"),
+                combo_str=current_hotkey,
                 device_path=hotkey_cfg.get("device_path")
             )
 
@@ -140,6 +144,7 @@ class WayVoxApp(QObject):
         # UI Klick & Hotkey -> Aufnahme Umschalten
         self.overlay.clicked.connect(self.toggle_recording)
         self.overlay.quit_requested.connect(self.quit_app)
+        self.overlay.hotkey_change_requested.connect(self.open_hotkey_dialog)
 
         if self.hotkey_listener:
             self.hotkey_listener.hotkey_pressed.connect(self.toggle_recording)
@@ -204,6 +209,40 @@ class WayVoxApp(QObject):
         logger.error(f"App-Fehler aufgetreten: {error_message}")
         self.feedback.play_error()
         self.overlay.set_state(AppState.ERROR)
+
+    @Slot()
+    def open_hotkey_dialog(self):
+        """Öffnet das Fenster zur Hotkey-Anpassung."""
+        hotkey_cfg = self.config.get("hotkey")
+        current_combo = hotkey_cfg.get("combination", "KEY_F12")
+
+        dialog = HotkeyDialog(self.overlay, current_combo=current_combo)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            new_combo = dialog.get_selected_hotkey()
+            if new_combo:
+                self.update_hotkey(new_combo)
+
+    def update_hotkey(self, new_combo: str):
+        """Aktualisiert die Hotkey-Konfiguration und wendet sie sofort an."""
+        logger.info(f"Ändere Hotkey auf: {new_combo}")
+
+        # 1. Config aktualisieren & speichern
+        if "hotkey" not in self.config.config_data:
+            self.config.config_data["hotkey"] = {}
+        self.config.config_data["hotkey"]["combination"] = new_combo
+        self.config.save_config()
+
+        # 2. Hotkey Listener aktualisieren
+        if self.hotkey_listener:
+            self.hotkey_listener.update_combination(new_combo)
+        else:
+            self.hotkey_listener = GlobalHotkeyListener(combo_str=new_combo)
+            self.hotkey_listener.hotkey_pressed.connect(self.toggle_recording)
+            self.hotkey_listener.start()
+
+        # 3. Tooltip anpassen
+        display_name = get_display_name_for_combo(new_combo)
+        self.overlay.set_hotkey_tooltip(display_name)
 
     def quit_app(self):
         """Beendet die Anwendung sauber."""

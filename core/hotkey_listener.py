@@ -36,11 +36,24 @@ class GlobalHotkeyListener(QThread):
         # Shift Tasten
         elif k in ("KEY_LEFTSHIFT", "KEY_RIGHTSHIFT", "KEY_SHIFT", "KEY_SHIFT_L", "KEY_SHIFT_R"):
             return "KEY_SHIFT"
+        # Grave / Circumflex / ^
+        elif k in ("KEY_GRAVE", "KEY_^", "KEY_CIRCUMFLEX", "KEY_CARET", "KEY_TILDE"):
+            return "KEY_GRAVE"
+        # 102ND / < / Less
+        elif k in ("KEY_102ND", "KEY_<", "KEY_LESS"):
+            return "KEY_102ND"
         # Einzelne Anführungszeichen/Buchstaben wie KEY_'X' -> KEY_X
         elif len(k) > 4 and k.startswith("KEY_'") and k.endswith("'"):
             char = k[5:-1].upper()
             return f"KEY_{char}"
         return k
+
+    def update_combination(self, combo_str: str):
+        """Aktualisiert die Hotkey-Kombination zur Laufzeit."""
+        self.combo_str = combo_str.upper()
+        self._target_keys = {self._normalize_key(k) for k in self.combo_str.split("+")}
+        self._keys_pressed.clear()
+        logger.info(f"Hotkey aktualisiert auf: {self.combo_str} (Ziel-Tasten: {self._target_keys})")
 
     def run(self):
         """Thread-Hauptschleife für die Hotkey-Überwachung."""
