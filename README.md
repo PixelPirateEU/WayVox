@@ -10,12 +10,14 @@
 
 - 🔒 **100 % Lokal & Offline**: Keine Cloud-Abhängigkeit, volle Kontrolle über deine Daten.
 - ⚡ **CUDA 12 GPU-Beschleunigung**: Optimiert für NVIDIA Grafikkarten (z. B. RTX 5070 Ti) mit automatischem CPU-Fallback.
-- 🎨 **Modernes Glassmorphic UI**: Transparentes Overlay-Fenster mit interaktivem Vektor-Mikrofonsymbol und dynamischen Status-Animationen (*Bereit*, *Aufnahme*, *Verarbeitung*, *Eingefügt*).
+- 🎯 **Silero VAD & KI-Halluzinationsfilter**: Automatische Filterung von Stille, Atemgeräuschen und Satzschleifen (verhindert doppelte Ausgaben und Youtube-Untertitel-Artefakte).
+- 🔒 **Einzel-Instanz-Sperre & Desktop-Portal**: Garantierte Einzelinstanz-Ausführung im Hintergrund (`QLockFile`) und automatische Registrierung beim KDE Plasma 6 Desktop Portal.
+- 🎨 **Modernes Glassmorphic UI**: Transparentes Overlay-Fenster mit interaktivem Vektor-Mikrofonsymbol, Taskleisten-Icon (`WayVox.png`) und dynamischen Status-Animationen (*Bereit*, *Aufnahme*, *Verarbeitung*, *Eingefügt*).
 - 🖐️ **Natives Wayland Drag & Drop**: Das Fenster lässt sich per Mausklick frei über den gesamten Desktop und mehrere Monitore verschieben (`startSystemMove`).
-- ⌨️ **Anpassbarer Globaler Hotkey**: Flexibler Hotkey (Standard: `F12`) zur Steuerung der Aufnahme ohne Fokusverlust. Über das Kontextmenü lässt sich die Tastenkombination zur Laufzeit beliebig anpassen (alle F-Tasten `F1`–`F12`, `Strg+M`, `Strg+^`, `Strg+<`).
+- ⌨️ **Anpassbarer Globaler Hotkey**: Flexibler Hotkey (Standard: `F12` / `F9`) zur Steuerung der Aufnahme ohne Fokusverlust. Über das Kontextmenü lässt sich die Tastenkombination zur Laufzeit beliebig anpassen (alle F-Tasten `F1`–`F12`, `Strg+M`, `Strg+^`, `Strg+<`).
 - 🇩🇪 **Perfekte QWERTZ & Umlaut-Unterstützung**: Vollständige Erhaltung deutscher Umlaute (`ä`, `ö`, `ü`, `ß`) und Sonderzeichen ohne Zeichenvertauschung (`z`/`y`).
 - 🔊 **Akustisches Feedback**: Dezente Signaltöne beim Starten, Stoppen und erfolgreichen Einfügen des Textes.
-- ⚙️ **Flexible Injektionsmethoden**: Unterstützt Kernel-level Injektion via `ydotool type` sowie universelles Zwischenablage-Pasting (Qt / `wl-copy`).
+- ⚙️ **Flexible Injektionsmethoden**: Unterstützt präzises Kernel-level Injektion via `python-evdev` / `ydotool` (1x `Strg+V`) sowie reines Zwischenablage-Kopieren (`clipboard`).
 
 ---
 
@@ -97,7 +99,7 @@ Die Einstellungen werden in `config.json` verwaltet und bei Änderungen über da
     "compute_type": "float16",
     "language": "de",
     "beam_size": 5,
-    "initial_prompt": "Das ist ein deutscher Text in hoher Qualität."
+    "initial_prompt": null
   },
   "audio": {
     "sample_rate": 16000,
