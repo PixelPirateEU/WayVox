@@ -14,6 +14,22 @@ class TextInjector:
         self.paste_delay_ms = paste_delay_ms
         self.fallback_to_clipboard = fallback_to_clipboard
         self._wtype_supported = True
+        self._uinput_device = None
+        self._init_uinput()
+
+    def _init_uinput(self):
+        """Initialisiert ein einziges, dauerhaftes virtuelles Tastaturgerät beim Start der Anwendung."""
+        try:
+            import evdev
+            from evdev import ecodes
+            capabilities = {
+                ecodes.EV_KEY: [ecodes.KEY_LEFTCTRL, ecodes.KEY_V]
+            }
+            self._uinput_device = evdev.UInput(events=capabilities, name="WayVox-Virtual-Keyboard")
+            logger.info("Dauerhaftes uinput-Tastaturgerät für WayVox erfolgreich registriert.")
+        except Exception as e:
+            logger.warning(f"Konnte uinput-Tastaturgerät nicht registrieren ({e}). Verwende Fallbacks...")
+            self._uinput_device = None
 
     def inject_text(self, text: str) -> bool:
         """Fügt den transkribierten Text in das aktive Fenster ein."""
@@ -24,7 +40,7 @@ class TextInjector:
         logger.info(f"Füge Text ein ({len(text)} Zeichen)...")
         time.sleep(self.paste_delay_ms / 1000.0)
 
-        # 1. Hauptmethode: Direktes python-evdev uinput (100% präzises 1x Strg+V ohne Daemon-Loops)
+        # 1. Hauptmethode: Direktes dauerhaftes uinput-Gerät (100% präzises 1x Strg+V ohne Hotplug-Loops)
         if self._inject_evdev_uinput(text):
             return True
 
@@ -37,37 +53,46 @@ class TextInjector:
         return self._inject_clipboard(text)
 
     def _inject_evdev_uinput(self, text: str) -> bool:
-        """Nutzt direktes Kernel uinput via python-evdev für präzise 1x Strg+V Injektion."""
+        """Nutzt das permanente uinput Tastaturgerät für 1x Strg+V ohne Hotplug-Events."""
+        if not self._uinput_device:
+            return False
+
         try:
             import evdev
             from evdev import ecodes
 
-            # 1. Text in die Qt-Zwischenablage setzen (sofort & ohne Verzögerung)
+            # 1. Text in die Qt-Zwischenablage setzen
             clipboard = QGuiApplication.clipboard()
             if clipboard:
                 clipboard.setText(text)
 
-            time.sleep(0.03)
+            time.sleep(0.05)
 
-            # 2. Exaktes 1-maliges Strg+V über eigenes uinput-Gerät senden
-            capabilities = {
-                ecodes.EV_KEY: [ecodes.KEY_LEFTCTRL, ecodes.KEY_V]
-            }
-            with evdev.UInput(events=capabilities, name="WayVox-Virtual-Keyboard") as ui:
-                ui.write(ecodes.EV_KEY, ecodes.KEY_LEFTCTRL, 1)
-                ui.syn()
-                ui.write(ecodes.EV_KEY, ecodes.KEY_V, 1)
-                ui.syn()
-                ui.write(ecodes.EV_KEY, ecodes.KEY_V, 0)
-                ui.syn()
-                ui.write(ecodes.EV_KEY, ecodes.KEY_LEFTCTRL, 0)
-                ui.syn()
+            # 2. Strg+V über das bestehende uinput-Gerät senden
+            ui = self._uinput_device
+            ui.write(ecodes.EV_KEY, ecodes.KEY_LEFTCTRL, 1)
+            ui.syn()
+            ui.write(ecodes.EV_KEY, ecodes.KEY_V, 1)
+            ui.syn()
+            ui.write(ecodes.EV_KEY, ecodes.KEY_V, 0)
+            ui.syn()
+            ui.write(ecodes.EV_KEY, ecodes.KEY_LEFTCTRL, 0)
+            ui.syn()
 
             logger.info("Text via uinput (1x Strg+V) erfolgreich eingefügt!")
             return True
         except Exception as e:
-            logger.warning(f"Direkte uinput Injektion nicht möglich ({e}). Wechsle zu Fallbacks...")
+            logger.warning(f"uinput Injektion fehlgeschlagen: {e}")
             return False
+
+    def close(self):
+        """Schließt das virtuelle uinput-Gerät sauber beim Beenden."""
+        if self._uinput_device:
+            try:
+                self._uinput_device.close()
+                self._uinput_device = None
+            except Exception:
+                pass
 
     def _inject_ydotool(self, text: str) -> bool:
         """Fallback via 'ydotool'."""

@@ -254,6 +254,9 @@ class WayVoxApp(QObject):
         if self.hotkey_listener:
             self.hotkey_listener.stop()
 
+        if self.injector:
+            self.injector.close()
+
         if self.transcriber_thread.isRunning():
             self.transcriber_thread.quit()
             self.transcriber_thread.wait(2000)
