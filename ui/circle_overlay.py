@@ -259,7 +259,7 @@ class CircleOverlay(QWidget):
     def mousePressEvent(self, event):
         """Unterstützt Drag-and-Drop Verschieben sowie Klick-Erkennung."""
         if event.button() == Qt.MouseButton.LeftButton:
-            self._drag_start_global = QCursor.pos()
+            self._drag_start_global = event.globalPosition().toPoint()
             self._drag_start_window = QPoint(self._target_pos)
             self._is_dragging = False
             event.accept()
@@ -267,27 +267,21 @@ class CircleOverlay(QWidget):
             self._show_context_menu(event.globalPosition().toPoint())
 
     def mouseMoveEvent(self, event):
-        """Verschiebt das Overlay sanft auf dem Bildschirm via Wayland Native Move."""
+        """Verschiebt das Overlay flüssig auf dem Bildschirm."""
         if event.buttons() & Qt.MouseButton.LeftButton:
-            delta = QCursor.pos() - self._drag_start_global
+            delta = event.globalPosition().toPoint() - self._drag_start_global
             if delta.manhattanLength() > 5:
                 self._is_dragging = True
                 self._target_pos = self._drag_start_window + delta
-                wh = self.windowHandle()
-                if wh and hasattr(wh, "startSystemMove") and wh.startSystemMove():
-                    pass
-                else:
-                    self.move(self._target_pos)
+                self.move(self._target_pos)
             event.accept()
 
     def mouseReleaseEvent(self, event):
         """Löst den Klick-Event aus oder signalisiert Ende des Verschiebens."""
         if event.button() == Qt.MouseButton.LeftButton:
             if self._is_dragging:
-                delta = QCursor.pos() - self._drag_start_global
+                delta = event.globalPosition().toPoint() - self._drag_start_global
                 self._target_pos = self._drag_start_window + delta
-                logger.info(f"Overlay Position nach Drag (QCursor) berechnet: x={self._target_pos.x()}, y={self._target_pos.y()}")
-                self.position_changed.emit(self._target_pos.x(), self._target_pos.y())
                 self._is_dragging = False
             else:
                 logger.info("Overlay per Mäuseklick aktiviert/deaktiviert.")
