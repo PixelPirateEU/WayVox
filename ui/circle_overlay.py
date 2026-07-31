@@ -4,7 +4,7 @@ import math
 import logging
 from PySide6.QtCore import Qt, QTimer, Signal, QPoint, QRectF
 from PySide6.QtWidgets import QWidget, QMenu
-from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QFont, QConicalGradient, QIcon
+from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QFont, QConicalGradient, QIcon, QCursor
 
 logger = logging.getLogger("WayVox.CircleOverlay")
 
@@ -259,7 +259,7 @@ class CircleOverlay(QWidget):
     def mousePressEvent(self, event):
         """Unterstützt Drag-and-Drop Verschieben sowie Klick-Erkennung."""
         if event.button() == Qt.MouseButton.LeftButton:
-            self._drag_start_global = event.globalPosition().toPoint()
+            self._drag_start_global = QCursor.pos()
             self._drag_start_window = QPoint(self._target_pos)
             self._is_dragging = False
             event.accept()
@@ -269,7 +269,7 @@ class CircleOverlay(QWidget):
     def mouseMoveEvent(self, event):
         """Verschiebt das Overlay sanft auf dem Bildschirm via Wayland Native Move."""
         if event.buttons() & Qt.MouseButton.LeftButton:
-            delta = event.globalPosition().toPoint() - self._drag_start_global
+            delta = QCursor.pos() - self._drag_start_global
             if delta.manhattanLength() > 5:
                 self._is_dragging = True
                 self._target_pos = self._drag_start_window + delta
@@ -284,9 +284,9 @@ class CircleOverlay(QWidget):
         """Löst den Klick-Event aus oder signalisiert Ende des Verschiebens."""
         if event.button() == Qt.MouseButton.LeftButton:
             if self._is_dragging:
-                delta = event.globalPosition().toPoint() - self._drag_start_global
+                delta = QCursor.pos() - self._drag_start_global
                 self._target_pos = self._drag_start_window + delta
-                logger.info(f"Overlay Position nach Drag berechnet: x={self._target_pos.x()}, y={self._target_pos.y()}")
+                logger.info(f"Overlay Position nach Drag (QCursor) berechnet: x={self._target_pos.x()}, y={self._target_pos.y()}")
                 self.position_changed.emit(self._target_pos.x(), self._target_pos.y())
                 self._is_dragging = False
             else:
