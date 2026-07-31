@@ -267,26 +267,35 @@ class CircleOverlay(QWidget):
             self._show_context_menu(event.globalPosition().toPoint())
 
     def mouseMoveEvent(self, event):
-        """Verschiebt das Overlay flüssig auf dem Bildschirm."""
+        """Verschiebt das Overlay sanft auf dem Bildschirm via Wayland Native Move."""
         if event.buttons() & Qt.MouseButton.LeftButton:
             delta = event.globalPosition().toPoint() - self._drag_start_global
             if delta.manhattanLength() > 5:
                 self._is_dragging = True
-                self._target_pos = self._drag_start_window + delta
-                self.move(self._target_pos)
+                wh = self.windowHandle()
+                if wh and hasattr(wh, "startSystemMove") and wh.startSystemMove():
+                    pass
+                else:
+                    self.move(self._drag_start_window + delta)
             event.accept()
 
     def mouseReleaseEvent(self, event):
         """Löst den Klick-Event aus oder signalisiert Ende des Verschiebens."""
         if event.button() == Qt.MouseButton.LeftButton:
             if self._is_dragging:
-                delta = event.globalPosition().toPoint() - self._drag_start_global
-                self._target_pos = self._drag_start_window + delta
                 self._is_dragging = False
             else:
                 logger.info("Overlay per Mäuseklick aktiviert/deaktiviert.")
                 self.clicked.emit()
             event.accept()
+
+    def moveEvent(self, event):
+        """Erfasst die Fensterposition bei KWin-Bewegung lautlos im RAM (ohne Disk/Log-Spam)."""
+        super().moveEvent(event)
+        if event and hasattr(event, "pos"):
+            p = event.pos()
+            if not p.isNull() and (p.x() != 0 or p.y() != 0):
+                self._target_pos = p
 
     def get_current_position(self) -> QPoint:
         """Gibt die aktuell gespeicherte Fensterposition zurück."""
