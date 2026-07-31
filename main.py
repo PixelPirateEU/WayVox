@@ -35,7 +35,7 @@ try:
 except Exception:
     pass
 
-from PySide6.QtCore import QObject, QThread, Slot
+from PySide6.QtCore import QObject, QThread, Slot, QLockFile
 from PySide6.QtWidgets import QApplication, QMessageBox, QDialog
 from PySide6.QtGui import QIcon
 
@@ -267,6 +267,13 @@ class WayVoxApp(QObject):
 def main():
     # Signal handling für SIGINT (Strg+C im Terminal)
     signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+    # Einzel-Instanz-Sperre gegen mehrfache Hintergrund-Prozesse
+    lock_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".wayvox.lock")
+    lock_file = QLockFile(lock_file_path)
+    if not lock_file.tryLock(100):
+        print("[WayVox] Eine Instanz von WayVox läuft bereits im Hintergrund! Beende doppelte Instanz.")
+        sys.exit(0)
 
     app = QApplication(sys.argv)
     app.setApplicationName("WayVox")
