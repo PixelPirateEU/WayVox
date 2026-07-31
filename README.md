@@ -1,6 +1,6 @@
 # 🎙️ WayVox
 
-![WayVox](WayVox.png)
+<img src="WayVox.png" alt="WayVox" width="250" />
 
 **WayVox** ist eine 100 % lokale, datenschutzkonforme KI-Voice-to-Text Anwendung für Linux (**Wayland / CachyOS / Arch Linux / KDE Plasma 6**). Sie verwandelt gesprochene Sprache über das KI-Modell `faster-whisper` (`large-v3`) in geschriebenen Text und fügt ihn direkt in deine aktive Anwendung ein.
 
