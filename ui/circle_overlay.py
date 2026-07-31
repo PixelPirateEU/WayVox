@@ -60,7 +60,7 @@ class CircleOverlay(QWidget):
             Qt.WindowType.FramelessWindowHint |
             Qt.WindowType.WindowStaysOnTopHint |
             Qt.WindowType.WindowDoesNotAcceptFocus |
-            Qt.WindowType.SplashScreen
+            Qt.WindowType.Tool
         )
         self.setWindowFlags(flags)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
