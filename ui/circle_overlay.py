@@ -42,8 +42,14 @@ class CircleOverlay(QWidget):
         self._drag_start_window = QPoint()
         self._is_dragging = False
 
+        self._target_pos = QPoint(pos_x, pos_y)
         self._init_ui(pos_x, pos_y)
         self._setup_animation_timer()
+
+    def showEvent(self, event):
+        """Wendet die gespeicherte Position unter KDE Plasma 6 Wayland nach dem Fenster-Mapping an."""
+        super().showEvent(event)
+        QTimer.singleShot(80, lambda: self.move(self._target_pos))
 
     def _init_ui(self, x: int, y: int):
         """Initialisiert Fenster-Eigenschaften & Wayland-Overlay Flags."""
@@ -274,12 +280,22 @@ class CircleOverlay(QWidget):
             event.accept()
 
     def mouseReleaseEvent(self, event):
-        """Löst den Klick-Event aus, wenn nicht gezogen wurde."""
+        """Löst den Klick-Event aus oder speichert die neue Position nach dem Verschieben."""
         if event.button() == Qt.MouseButton.LeftButton:
-            if not self._is_dragging:
+            if self._is_dragging:
+                curr_pos = self.pos()
+                if self.windowHandle() and hasattr(self.windowHandle(), "position"):
+                    wh_pos = self.windowHandle().position()
+                    if not wh_pos.isNull():
+                        curr_pos = wh_pos
+
+                self._target_pos = curr_pos
+                logger.info(f"Overlay nach Drag auf neue Position gesetzt: x={curr_pos.x()}, y={curr_pos.y()}")
+                self.position_changed.emit(curr_pos.x(), curr_pos.y())
+                self._is_dragging = False
+            else:
                 logger.info("Overlay per Mäuseklick aktiviert/deaktiviert.")
                 self.clicked.emit()
-            self._is_dragging = False
             event.accept()
 
     def moveEvent(self, event):
