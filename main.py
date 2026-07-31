@@ -264,9 +264,40 @@ class WayVoxApp(QObject):
         self.app.quit()
 
 
+def ensure_desktop_file():
+    """Erstellt automatisch die .desktop-Datei in ~/.local/share/applications/, damit KDE Plasma Portal WayVox erkennt."""
+    try:
+        home = os.path.expanduser("~")
+        apps_dir = os.path.join(home, ".local", "share", "applications")
+        os.makedirs(apps_dir, exist_ok=True)
+
+        desktop_file = os.path.join(apps_dir, "WayVox.desktop")
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        run_sh = os.path.join(script_dir, "run.sh")
+        icon_png = os.path.join(script_dir, "WayVox.png")
+
+        content = f"""[Desktop Entry]
+Name=WayVox
+Comment=100% lokale Voice-to-Text Anwendung für Linux (Wayland)
+Exec={run_sh}
+Icon={icon_png}
+Terminal=false
+Type=Application
+Categories=Utility;Audio;
+StartupWMClass=WayVox
+"""
+        with open(desktop_file, "w", encoding="utf-8") as f:
+            f.write(content)
+    except Exception as e:
+        logger.debug(f"Konnte Desktop-Datei nicht registrieren: {e}")
+
+
 def main():
     # Signal handling für SIGINT (Strg+C im Terminal)
     signal.signal(signal.SIGINT, signal.SIG_DFL)
+
+    # Automatische Registrierung beim KDE Desktop Portal
+    ensure_desktop_file()
 
     # Einzel-Instanz-Sperre gegen mehrfache Hintergrund-Prozesse
     lock_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".wayvox.lock")
