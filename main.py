@@ -248,19 +248,38 @@ class WayVoxApp(QObject):
 
     @Slot(int, int)
     def _on_position_changed(self, x: int, y: int):
-        """Speichert die neue Fensterposition automatisch in config.json."""
+        """Aktualisiert die Fensterposition im Speicher."""
         if "ui" not in self.config.config_data:
             self.config.config_data["ui"] = {}
 
         ui_cfg = self.config.config_data["ui"]
-        if ui_cfg.get("position_x") != x or ui_cfg.get("position_y") != y:
-            ui_cfg["position_x"] = x
-            ui_cfg["position_y"] = y
-            self.config.save_config()
+        ui_cfg["position_x"] = x
+        ui_cfg["position_y"] = y
 
     def quit_app(self):
-        """Beendet die Anwendung sauber."""
+        """Beendet die Anwendung sauber und speichert die letzte Fensterposition in config.json."""
         logger.info("Beende WayVox...")
+        
+        # 1. Letzte Overlay-Position auslesen & einmalig speichern
+        try:
+            if self.overlay:
+                pos = self.overlay.pos()
+                if self.overlay.windowHandle() and hasattr(self.overlay.windowHandle(), "position"):
+                    wh_pos = self.overlay.windowHandle().position()
+                    if not wh_pos.isNull():
+                        pos = wh_pos
+
+                if "ui" not in self.config.config_data:
+                    self.config.config_data["ui"] = {}
+
+                ui_cfg = self.config.config_data["ui"]
+                ui_cfg["position_x"] = pos.x()
+                ui_cfg["position_y"] = pos.y()
+                self.config.save_config()
+                logger.info(f"Fensterposition ({pos.x()}, {pos.y()}) in config.json gespeichert.")
+        except Exception as e:
+            logger.warning(f"Konnte Fensterposition beim Beenden nicht speichern: {e}")
+
         if self.recorder.is_recording():
             self.recorder.stop_recording()
 

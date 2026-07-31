@@ -267,35 +267,30 @@ class CircleOverlay(QWidget):
             self._show_context_menu(event.globalPosition().toPoint())
 
     def mouseMoveEvent(self, event):
-        """Verschiebt das Overlay sanft auf dem Bildschirm."""
+        """Verschiebt das Overlay sanft auf dem Bildschirm via Wayland Native Move."""
         if event.buttons() & Qt.MouseButton.LeftButton:
             delta = event.globalPosition().toPoint() - self._drag_start_global
             if delta.manhattanLength() > 5:
                 self._is_dragging = True
-                new_pos = self._drag_start_window + delta
-                self.move(new_pos)
+                wh = self.windowHandle()
+                if wh and hasattr(wh, "startSystemMove") and wh.startSystemMove():
+                    pass
+                else:
+                    self.move(self._drag_start_window + delta)
             event.accept()
 
     def mouseReleaseEvent(self, event):
-        """Löst den Klick-Event aus oder speichert die neue Position nach dem Verschieben."""
+        """Löst den Klick-Event aus oder signalisiert Ende des Verschiebens."""
         if event.button() == Qt.MouseButton.LeftButton:
             if self._is_dragging:
                 curr_pos = self.pos()
                 self._target_pos = curr_pos
-                logger.info(f"Overlay nach Drag auf neue Position gesetzt: x={curr_pos.x()}, y={curr_pos.y()}")
                 self.position_changed.emit(curr_pos.x(), curr_pos.y())
                 self._is_dragging = False
             else:
                 logger.info("Overlay per Mäuseklick aktiviert/deaktiviert.")
                 self.clicked.emit()
             event.accept()
-
-    def moveEvent(self, event):
-        """Emittiert das position_changed Signal bei jeder Positionsänderung."""
-        super().moveEvent(event)
-        pos = self.pos()
-        self._target_pos = pos
-        self.position_changed.emit(pos.x(), pos.y())
 
     def set_hotkey_tooltip(self, display_name: str):
         """Aktualisiert den Tooltip mit dem aktuellen Hotkey."""
