@@ -1,9 +1,10 @@
+import os
 import enum
 import math
 import logging
 from PySide6.QtCore import Qt, QTimer, Signal, QPoint, QRectF
 from PySide6.QtWidgets import QWidget, QMenu
-from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QFont, QConicalGradient
+from PySide6.QtGui import QPainter, QColor, QPen, QBrush, QFont, QConicalGradient, QIcon
 
 logger = logging.getLogger("WayVox.CircleOverlay")
 
@@ -58,6 +59,10 @@ class CircleOverlay(QWidget):
         self.move(x, y)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setToolTip("Klick oder Alt+Leertaste zum Starten/Stoppen der Sprachaufnahme")
+
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "WayVox.png")
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
 
     def _setup_animation_timer(self):
         """Timer für flüssige 60FPS UI-Animationen (Rotations-Spinner, Pulse, Blink)."""

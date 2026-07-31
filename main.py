@@ -37,6 +37,7 @@ except Exception:
 
 from PySide6.QtCore import QObject, QThread, Slot
 from PySide6.QtWidgets import QApplication, QMessageBox, QDialog
+from PySide6.QtGui import QIcon
 
 from utils.config import ConfigManager
 from utils.audio_feedback import AudioFeedback
@@ -267,6 +268,11 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("WayVox")
     app.setOrganizationName("WayVox")
+    app.setDesktopFileName("WayVox")
+
+    icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "WayVox.png")
+    if os.path.exists(icon_path):
+        app.setWindowIcon(QIcon(icon_path))
 
     wayvox = WayVoxApp(app)
     sys.exit(app.exec())

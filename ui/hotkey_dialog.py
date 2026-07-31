@@ -1,8 +1,10 @@
+import os
 import logging
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QPushButton
 )
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon
 
 from core.hotkey_listener import GlobalHotkeyListener
 
@@ -78,6 +80,10 @@ class HotkeyDialog(QDialog):
         self.setWindowTitle("Hotkey anpassen")
         self.setFixedSize(380, 210)
         self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowStaysOnTopHint)
+
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "WayVox.png")
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
 
         self._setup_ui(current_combo)
 
